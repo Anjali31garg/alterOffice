@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Avatar } from '@mui/material';
 import { Timestamp } from 'firebase/firestore';
 
@@ -8,50 +8,23 @@ interface CommentProps {
   user: string;
   avatar: string;
   file: string | null;
-  reactions: { likes: number; dislikes: number; usersWhoLiked: Set<string>; usersWhoDisliked: Set<string> };
-  currentUser: string; // ID of the current user
-  onReact: (type: 'like' | 'dislike' | 'remove') => void; // Callback for handling reactions
+  reactions: { likes: number; dislikes: number };
+  onReact: (type: 'like' | 'dislike') => void; // Callback for handling reactions
 }
 
-const Comment: React.FC<CommentProps> = ({ text, timestamp, user, avatar, file, reactions, currentUser, onReact }) => {
-  const [localReactions, setLocalReactions] = useState({
-    likes: reactions.likes,
-    dislikes: reactions.dislikes,
-    userReaction: reactions.usersWhoLiked.has(currentUser) ? 'like' : reactions.usersWhoDisliked.has(currentUser) ? 'dislike' : null,
-  });
+const Comment: React.FC<CommentProps> = ({ text, timestamp, user, avatar, file, reactions, onReact }) => {
+  const [localReactions, setLocalReactions] = useState(reactions);
 
-  useEffect(() => {
-    setLocalReactions(prev => ({
-      ...prev,
-      likes: reactions.likes,
-      dislikes: reactions.dislikes,
-      userReaction: reactions.usersWhoLiked.has(currentUser) ? 'like' : reactions.usersWhoDisliked.has(currentUser) ? 'dislike' : null,
-    }));
-  }, [reactions, currentUser]);
+  // Convert Firestore Timestamp to JavaScript Date
+  const date = timestamp?.toDate();
 
   const handleLike = () => {
-    if (localReactions.userReaction === 'like') {
-      return; // Already liked
-    }
-    if (localReactions.userReaction === 'dislike') {
-      // Remove previous dislike
-      setLocalReactions(prev => ({ ...prev, dislikes: prev.dislikes - 1 }));
-      onReact('remove');
-    }
-    setLocalReactions(prev => ({ ...prev, likes: prev.likes + 1, userReaction: 'like' }));
+    setLocalReactions(prev => ({ ...prev, likes: prev.likes + 1 }));
     onReact('like');
   };
 
   const handleDislike = () => {
-    if (localReactions.userReaction === 'dislike') {
-      return; // Already disliked
-    }
-    if (localReactions.userReaction === 'like') {
-      // Remove previous like
-      setLocalReactions(prev => ({ ...prev, likes: prev.likes - 1 }));
-      onReact('remove');
-    }
-    setLocalReactions(prev => ({ ...prev, dislikes: prev.dislikes + 1, userReaction: 'dislike' }));
+    setLocalReactions(prev => ({ ...prev, dislikes: prev.dislikes + 1 }));
     onReact('dislike');
   };
 
@@ -59,14 +32,14 @@ const Comment: React.FC<CommentProps> = ({ text, timestamp, user, avatar, file, 
     <div>
       <Avatar src={avatar} />
       <p>{user}</p>
-      <p>{timestamp?.toDate().toLocaleString() || 'Unknown date'}</p>
+      <p>{date ? date.toLocaleString() : 'Unknown date'}</p> {/* Format the date */}
       <div dangerouslySetInnerHTML={{ __html: text }} />
       {file && <img src={file} alt="attachment" style={{ width: '100px' }} />}
       <div>
-        <button onClick={handleLike} aria-label="Like" disabled={localReactions.userReaction === 'like'}>
+        <button onClick={handleLike} aria-label="Like">
           👍 {localReactions.likes}
         </button>
-        <button onClick={handleDislike} aria-label="Dislike" disabled={localReactions.userReaction === 'dislike'}>
+        <button onClick={handleDislike} aria-label="Dislike">
           👎 {localReactions.dislikes}
         </button>
       </div>
