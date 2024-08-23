@@ -4,7 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 
 interface CommentProps {
   text: string;
-  timestamp: Timestamp; // Ensure this is a Firestore Timestamp
+  timestamp: Timestamp; 
   user: string;
   avatar: string;
   file: string | null;
